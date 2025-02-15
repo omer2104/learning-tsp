@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from typing import NamedTuple
+from dataclasses import dataclass
 
 import torch
 from torch import nn
@@ -13,7 +14,8 @@ from utils.beam_search import CachedLookup
 from utils.functions import sample_many
 
 
-class AttentionModelFixed(NamedTuple):
+@dataclass
+class AttentionModelFixed:
     """
     Context for AttentionModel decoder that is fixed during decoding so can be precomputed/cached
     This class allows for efficient indexing of multiple Tensors at once
@@ -33,7 +35,7 @@ class AttentionModelFixed(NamedTuple):
                 glimpse_val=self.glimpse_val[:, key],  # dim 0 are the heads
                 logit_key=self.logit_key[key]
             )
-        return super(AttentionModelFixed, self).__getitem__(key)
+        return super().__getitem__(key)
 
 
 class AttentionModel(nn.Module):
@@ -570,9 +572,9 @@ class AttentionModel(nn.Module):
         compatibility = torch.matmul(glimpse_Q, glimpse_K.transpose(-2, -1)) / math.sqrt(glimpse_Q.size(-1))
         if self.mask_inner:
             assert self.mask_logits, "Cannot mask inner without masking logits"
-            compatibility[mask[None, :, :, None, :].expand_as(compatibility)] = -1e10
+            compatibility[mask[None, :, :, None, :].expand_as(compatibility).bool()] = -1e10
             if self.mask_graph:
-                compatibility[graph_mask[None, :, :, None, :].expand_as(compatibility)] = -1e10
+                compatibility[graph_mask[None, :, :, None, :].expand_as(compatibility).bool()] = -1e10
 
         # Batch matrix multiplication to compute heads (n_heads, batch_size, num_steps, val_size)
         heads = torch.matmul(F.softmax(compatibility, dim=-1), glimpse_V)
@@ -590,11 +592,11 @@ class AttentionModel(nn.Module):
         
         # From the logits compute the probabilities by masking the graph, clipping, and masking visited
         if self.mask_logits and self.mask_graph:
-            logits[graph_mask] = -1e10 
+            logits[graph_mask.bool()] = -1e10 
         if self.tanh_clipping > 0:
             logits = torch.tanh(logits) * self.tanh_clipping
         if self.mask_logits:
-            logits[mask] = -1e10
+            logits[mask.bool()] = -1e10
 
         return logits, glimpse.squeeze(-2)
 

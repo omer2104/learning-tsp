@@ -1,4 +1,5 @@
 import time
+from dataclasses import dataclass
 import torch
 from typing import NamedTuple
 from utils.lexsort import torch_lexsort
@@ -51,7 +52,8 @@ def _beam_search(state, beam_size, propose_expansions=None,
     return beams, beam.state
 
 
-class BatchBeam(NamedTuple):
+@dataclass
+class BatchBeam:
     """
     Class that keeps track of a beam for beam search in batch mode.
     Since the beam size of different entries in the batch may vary, the tensors are not (batch_size, beam_size, ...)
@@ -71,14 +73,15 @@ class BatchBeam(NamedTuple):
 
     def __getitem__(self, key):
         if torch.is_tensor(key) or isinstance(key, slice):  # If tensor, idx all tensors by this tensor:
-            return self._replace(
-                # ids=self.ids[key],
+            return BatchBeam(
                 score=self.score[key] if self.score is not None else None,
                 state=self.state[key],
                 parent=self.parent[key] if self.parent is not None else None,
-                action=self.action[key] if self.action is not None else None
+                action=self.action[key] if self.action is not None else None,
+                batch_size=self.batch_size,
+                device=self.device
             )
-        return super(BatchBeam, self).__getitem__(key)
+        return super().__getitem__(key)
 
     # Do not use __len__ since this is used by namedtuple internally and should be number of fields
     # def __len__(self):
@@ -105,11 +108,13 @@ class BatchBeam(NamedTuple):
         return parent, action, None
 
     def expand(self, parent, action, score=None):
-        return self._replace(
+        return BatchBeam(
             score=score,  # The score is cleared upon expanding as it is no longer valid, or it must be provided
             state=self.state[parent].update(action),  # Pass ids since we replicated state
             parent=parent,
-            action=action
+            action=action,
+            batch_size=self.batch_size,
+            device=self.device
         )
 
     def topk(self, k):
@@ -125,15 +130,24 @@ class BatchBeam(NamedTuple):
     def to(self, device):
         if device == self.device:
             return self
-        return self._replace(
+        return BatchBeam(
             score=self.score.to(device) if self.score is not None else None,
             state=self.state.to(device),
             parent=self.parent.to(device) if self.parent is not None else None,
-            action=self.action.to(device) if self.action is not None else None
+            action=self.action.to(device) if self.action is not None else None,
+            batch_size=self.batch_size,
+            device=device
         )
 
     def clear_state(self):
-        return self._replace(state=None)
+        return BatchBeam(
+            score=self.score,
+            state=None,
+            parent=self.parent,
+            action=self.action,
+            batch_size=self.batch_size,
+            device=self.device
+        )
 
     def size(self):
         return self.state.ids.size(0)

@@ -1,9 +1,11 @@
 import torch
 from typing import NamedTuple
 from utils.boolmask import mask_long2bool, mask_long_scatter
+from dataclasses import dataclass
 
 
-class StateTSP(NamedTuple):
+@dataclass
+class StateTSP:
     """Class used to keep track of TSP state, mainly used during beam search
     """
 
@@ -33,15 +35,19 @@ class StateTSP(NamedTuple):
 
     def __getitem__(self, key):
         if torch.is_tensor(key) or isinstance(key, slice):  # If tensor, idx all tensors by this tensor:
-            return self._replace(
+            return StateTSP(
+                loc=self.loc,
+                dist=self.dist,
                 ids=self.ids[key],
                 first_a=self.first_a[key],
                 prev_a=self.prev_a[key],
                 visited_=self.visited_[key],
                 lengths=self.lengths[key],
                 cur_coord=self.cur_coord[key] if self.cur_coord is not None else None,
+                i=self.i,
+                graph=self.graph
             )
-        return super(StateTSP, self).__getitem__(key)
+        return super().__getitem__(key)
 
     @staticmethod
     def initialize(loc, graph, visited_dtype=torch.uint8):
@@ -55,11 +61,8 @@ class StateTSP(NamedTuple):
             first_a=prev_a,
             prev_a=prev_a,
             # Keep visited with depot so we can scatter efficiently (if there is an action for depot)
-            visited_=(  # Visited as mask is easier to understand, as long more memory efficient
-                torch.zeros(
-                    batch_size, 1, n_loc,
-                    dtype=torch.uint8, device=loc.device
-                )
+            visited_=(
+                torch.zeros(batch_size, 1, n_loc, dtype=torch.uint8, device=loc.device)
                 if visited_dtype == torch.uint8
                 else torch.zeros(batch_size, 1, (n_loc + 63) // 64, dtype=torch.int64, device=loc.device)  # Ceil
             ),
@@ -70,15 +73,10 @@ class StateTSP(NamedTuple):
         )
 
     def get_final_cost(self):
-
         assert self.all_finished()
-        # assert self.visited_.
-
         return self.lengths + (self.loc[self.ids, self.first_a, :] - self.cur_coord).norm(p=2, dim=-1)
 
     def update(self, selected):
-
-        # Update the state
         prev_a = selected[:, None]  # Add dimension for step
 
         # Add the length
@@ -101,8 +99,18 @@ class StateTSP(NamedTuple):
         else:
             visited_ = mask_long_scatter(self.visited_, prev_a)
 
-        return self._replace(first_a=first_a, prev_a=prev_a, visited_=visited_,
-                             lengths=lengths, cur_coord=cur_coord, i=self.i + 1)
+        return StateTSP(
+            loc=self.loc,
+            dist=self.dist,
+            ids=self.ids,
+            first_a=first_a,
+            prev_a=prev_a,
+            visited_=visited_,
+            lengths=lengths,
+            cur_coord=cur_coord,
+            i=self.i + 1,
+            graph=self.graph
+        )
 
     def all_finished(self):
         # Exactly n steps
@@ -139,11 +147,7 @@ class StateTSP(NamedTuple):
             k = self.loc.size(-2)
         k = min(k, self.loc.size(-2) - self.i.item())  # Number of remaining
         return (
-            self.dist[
-                self.ids,
-                self.prev_a
-            ] +
-            self.visited.float() * 1e6
+            self.dist[self.ids, self.prev_a] + self.visited.float() * 1e6
         ).topk(k, dim=-1, largest=False)[1]
 
     def construct_solutions(self, actions):
