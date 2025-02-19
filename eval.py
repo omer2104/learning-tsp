@@ -32,7 +32,7 @@ def eval_dataset(dataset_path, decode_strategy, width, softmax_temp, opts):
     results = _eval_dataset(model, dataset, decode_strategy, width, softmax_temp, opts, device)
 
     costs, tours, durations = zip(*results)
-    costs, tours, durations = np.array(costs), np.array(tours), np.array(durations)
+    costs, tours, durations = np.array(costs), tours, np.array(durations)
     gt_tours = dataset.tour_nodes
     gt_costs = rollout_groundtruth(model.problem, dataset, opts).cpu().numpy()
     opt_gap = ((costs/gt_costs - 1) * 100)
@@ -205,6 +205,12 @@ if __name__ == "__main__":
     # Set the random seed
     torch.manual_seed(opts.seed)
     np.random.seed(opts.seed)
+
+    print(f"{opts.no_cuda=}")
+    use_cuda = torch.cuda.is_available() and not opts.no_cuda
+    print(f"{use_cuda=}")
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+    print(f"{device=}")
 
     for decode_strategy, width in zip(opts.decode_strategies, opts.widths):
         latex_str = "{}-{}{}".format(opts.model, decode_strategy, width if decode_strategy != 'greedy' else '')
