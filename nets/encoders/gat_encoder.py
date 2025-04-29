@@ -83,7 +83,7 @@ class MultiHeadAttention(nn.Module):
 
         # Optionally apply mask to prevent attention
         if mask is not None:
-            compatibility[mask[None, :, :, :].expand_as(compatibility)] = -1e10
+            compatibility[mask[None, :, :, :].expand_as(compatibility).bool()] = -1e10
 
         attn = F.softmax(compatibility, dim=-1)
 

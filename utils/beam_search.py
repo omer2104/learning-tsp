@@ -204,6 +204,7 @@ def backtrack(parents, actions):
     cur_parent = parents[-1]
     reversed_aligned_sequences = [actions[-1]]
     for parent, sequence in reversed(list(zip(parents[:-1], actions[:-1]))):
+        cur_parent = cur_parent.long()  # Ensure it's an integer before indexing
         reversed_aligned_sequences.append(sequence.gather(-1, cur_parent))
         cur_parent = parent.gather(-1, cur_parent)
 

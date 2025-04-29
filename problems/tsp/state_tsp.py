@@ -35,15 +35,16 @@ class StateTSP:
 
     def __getitem__(self, key):
         if torch.is_tensor(key) or isinstance(key, slice):  # If tensor, idx all tensors by this tensor:
+            converted_key = key.long()
             return StateTSP(
                 loc=self.loc,
                 dist=self.dist,
-                ids=self.ids[key],
-                first_a=self.first_a[key],
-                prev_a=self.prev_a[key],
-                visited_=self.visited_[key],
-                lengths=self.lengths[key],
-                cur_coord=self.cur_coord[key] if self.cur_coord is not None else None,
+                ids=self.ids[converted_key],
+                first_a=self.first_a[converted_key],
+                prev_a=self.prev_a[converted_key],
+                visited_=self.visited_[converted_key],
+                lengths=self.lengths[converted_key],
+                cur_coord=self.cur_coord[converted_key] if self.cur_coord is not None else None,
                 i=self.i,
                 graph=self.graph
             )
