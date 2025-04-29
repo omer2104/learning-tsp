@@ -430,7 +430,7 @@ if __name__ == "__main__":
                                         gap=float(runs) if method[6:] == "gap" else None)
             else:
                 assert method[-9:] == "insertion"
-                use_multiprocessing = True
+                use_multiprocessing = False
 
                 def run_func(args):
                     return solve_insertion(*args, opts.method.split("_")[0])
@@ -444,7 +444,7 @@ if __name__ == "__main__":
             assert False, "Unknown method: {}".format(opts.method)
 
         costs, tours, durations = zip(*results)  # Not really costs since they should be negative
-        costs, tours, durations = np.array(costs), np.array(tours), np.array(durations)
+        costs, tours, durations = np.array(costs), tours, np.array(durations)
         gt_tours = tsp_dataset.tour_nodes
         
         def rollout_groundtruth(problem, dataset):
