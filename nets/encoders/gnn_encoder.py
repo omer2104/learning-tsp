@@ -62,6 +62,9 @@ class GNNLayer(nn.Module):
         Returns: 
             Updated node and edge features
         """
+        if len(h.shape) == 2:
+            h = h.unsqueeze(0)
+        
         batch_size, num_nodes, hidden_dim = h.shape
         h_in = h
         e_in = e
@@ -122,6 +125,9 @@ class GNNLayer(nn.Module):
         
         elif self.aggregation == "max":
             return torch.max(Vh, dim=2)[0]
+        
+        elif self.aggregation == "min":
+            return torch.min(Vh, dim=2)[0]
         
         else:
             return torch.sum(Vh, dim=2)

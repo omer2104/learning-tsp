@@ -49,7 +49,7 @@ def get_options(args=None):
     parser.add_argument('--n_encode_layers', type=int, default=3, 
                         help='Number of layers in the encoder/critic network')
     parser.add_argument('--aggregation', default='max', 
-                        help="Neighborhood aggregation function: 'sum'/'mean'/'max'")
+                        help="Neighborhood aggregation function: 'sum'/'mean'/'max'/'min'")
     parser.add_argument('--aggregation_graph', default='mean', 
                         help="Graph embedding aggregation function: 'sum'/'mean'/'max'")
     parser.add_argument('--normalization', default='layer', 

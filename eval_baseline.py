@@ -400,7 +400,7 @@ if __name__ == "__main__":
             
             # Load TSP dataset
             tsp_dataset = TSP.make_dataset(
-                filename=dataset_path, batch_size=128, num_samples=opts.n, 
+                filename=dataset_path, batch_size=16, num_samples=opts.n, 
                 neighbors=-1, knn_strat='none', supervised=True
             )
 
@@ -453,7 +453,7 @@ if __name__ == "__main__":
             return torch.cat([
                 problem.get_costs(bat['nodes'], bat['tour_nodes'])[0]
                 for bat in DataLoader(
-                    dataset, batch_size=128, shuffle=False, num_workers=0)
+                    dataset, batch_size=16, shuffle=False, num_workers=0)
             ], 0)
         
         gt_costs = rollout_groundtruth(TSP, tsp_dataset).cpu().numpy()

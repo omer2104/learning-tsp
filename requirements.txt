@@ -9,6 +9,8 @@ seaborn==0.13.2
 tensorboard==2.19.0
 pandas==2.2.3
 tensorboard-logger==0.1.0
+protobuf==3.20.*
+plotly==6.2.0
 
 # absl-py==2.1.0
 # colorama==0.4.6

@@ -41,3 +41,25 @@ Launch json example:
 }
 ```
 This will take the nodes from the dataset, and solve them again with the Concorde Solver, by applying a max normalization so that the coordinates will be between 0 and 1. The normalization happens by default, and can be turned off with the parameter `--normalize False`.
+
+
+## Training with a different Embedding/Hidden Dim
+Note that in the code you can find to references to the hidden dimension:
+```
+--hidden_dim
+--embedding_dim
+```
+
+Almost in all places, they use the `opts.embedding_dim` parameter, so you can simply ignore the other one.
+
+Regarding running the training with a non-default embedding dimension, simply change these 2 variables in the script `train-sl-ar.sh` :
+```
+# EMBEDDING_DIM=128
+EMBEDDING_DIM=8
+
+# RUN_NAME="sl-ar-var-20pnn-gnn-max"
+RUN_NAME="sl-ar-var-20pnn-8edim-gnn-max" # For clarity in the output name
+```
+
+Verify that the opts that are printed match the one's in the script.
+
